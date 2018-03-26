@@ -1,0 +1,61 @@
+int ldr=A0;
+int pir=A1;
+int bled=LED_BUILTIN;
+int led=3;
+int relay=11;
+
+int state=LOW; // state of output pin 
+int reading;
+int readlrd;
+int previous; //prev reading from input pin
+  
+void setup() {
+
+ //Serial.begin(9600);
+  
+ pinMode(relay,OUTPUT);
+ pinMode(ldr,INPUT);
+ pinMode(led,OUTPUT);
+ pinMode(bled,OUTPUT);
+ pinMode(pir,INPUT);
+ digitalWrite(led,LOW);
+ digitalWrite(bled,LOW);
+ digitalWrite(relay,LOW); 
+ //digitalWrite(led2,HIGH);
+ delay(2000);
+
+}
+
+void loop() {
+  readlrd=analogRead(ldr);
+//  if(readlrd < 15)
+//  {
+    reading=analogRead(pir);
+    if(reading > 400 )
+    {
+      digitalWrite(led,HIGH);
+      delay(6500);
+      if(state == HIGH)
+      {
+        state=LOW;
+        delay(250); 
+      }
+      else
+      {
+        state=HIGH;
+      }
+      digitalWrite(led,LOW);
+      delay(100);
+    }
+ // Serial.println(reading);
+  //previous = reading;  
+    digitalWrite(bled,state);
+    digitalWrite(relay,state);
+ //   digitalWrite(led,state);
+    //if(state == HIGH)
+    //analogWrite(relay,168);
+    //else
+    //analogWrite(relay,0);
+    delay(250); 
+  }
+//}
