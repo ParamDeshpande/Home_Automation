@@ -19,4 +19,4 @@ does basic (only either of the 1 or more with same toggling) light / fan / appli
 
 2nd)
 Lazyboyproto
-does the same shit as above but also supports multiple lights / fans / appliances , counts the no of people inside the room and supports multiple people, has dedicated buttons for prefrence (ie you can choose which appliance you want active and which inactive when you enter), and lastly a 16x2 lcd screen to display the stats (can be controlled by one those damn buttons a well)
+does the same thing(s) as above but also supports multiple lights / fans / appliances , counts the no of people inside the room and supports multiple people, has dedicated buttons for prefrence (ie you can choose which appliance you want active and which inactive when you enter), and lastly a 16x2 lcd screen to display the stats (can be controlled by one those damn buttons a well)
