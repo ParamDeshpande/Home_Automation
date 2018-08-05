@@ -15,7 +15,7 @@ leds // can be used in both the models (optional)
 
 1st)
 proto1
-does basic (only either of the 1 or more with same toggling) light / fan / appliance toggling for an **𝐨𝐧𝐞 𝐩𝐞𝐫𝐬𝐨𝐧** entry / exit basis
+does basic (only either of the 1 or more with same toggling) light / fan / appliance toggling for **single 𝐩𝐞𝐫𝐬𝐨𝐧** entry / exit basis
 
 2nd)
 Lazyboyproto
