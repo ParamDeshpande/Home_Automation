@@ -11,7 +11,7 @@ button(s) //for lazyboyproto
 
 leds // can be used in both the models (optional)
 
-This repository consists of 2 parts 
+
 
 1st)
 proto1
