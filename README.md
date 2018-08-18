@@ -1,6 +1,6 @@
 # ArduinoNano
 
-automatically lights, fans, appliances
+automatically controls lights, fans, appliances
 
 components needed 
 pir sensor(s)
