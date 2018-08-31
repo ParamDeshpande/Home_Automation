@@ -53,18 +53,18 @@ class Button{
   unsigned long time = 0;           // the last time the output pin was toggled
   unsigned long debounce = 250UL;   // the debounce time, increase if the output flickers
 
-  public :
+  public :                        //constructor
   Button(int bpin , int ledpin){
     inPin = bpin;
     outPin = ledpin;
   } 
   
-    void Setup (){
+    void Setup (){                //initialization
       pinMode(inPin,  INPUT);
       pinMode(outPin, OUTPUT);
     }
     
-    bool bpressed = 0 ;
+    bool bpressed = 0 ;           //state of button 
     
       void Loop(){
         reading = digitalRead(inPin);
@@ -94,10 +94,10 @@ class Button{
     
   };
 
-Button btube(14,0);
+Button btube(14,0);   //initializing objects
 Button bfan(15,0);
 
-class Button2{
+class Button2{        //Button Pins for adding /removing the no of people
   int bPin ;
   public:
     Button2(int pinno){
@@ -150,22 +150,25 @@ class Button2{
 
 Button2 badds(17);
 Button2 bsubs(18);
+
+// PIR MOTION DETECTOR CLASS 
+
 class Pir{
   
 int pir;
 int reading ;
-public:
-  Pir(long pinno){
+public:               //constructor
+  Pir(long pinno){    
     pir = pinno;
   }
   
-  void Setup(){
+  void Setup(){         //Setup
     pinMode(pir,INPUT);
   }
-  unsigned long currentTime = 100;
+  unsigned long currentTime = 100;    //?
   void Loop(){
     reading = digitalRead(pir);
-    if(reading == HIGH){
+    if(reading == HIGH){              //if reading is high then time is recorded
       currentTime = millis();
     }
     else
@@ -174,73 +177,92 @@ public:
   
   
   long timer(){
-    return currentTime;
+    return currentTime;           //returns the stored current time
   }
 };
 Pir sensor1(7);
 Pir sensor2(10);
 
-
 const int relaytube = 9;
 const int relayfan = 8;
-
-void door(){
-digitalWrite(relaytube ,btube.STATE() );
-}
-
-void inside(){
-    digitalWrite(relaytube,btube.STATE());
-    digitalWrite(relayfan,bfan.STATE());
-    pcount ++;
-  }
-  
-  void outside(){
-    pcount --;
-    if(pcount == 0 ){
-      digitalWrite(relaytube,LOW);
-      digitalWrite(relayfan,LOW);
-    }
-  }
-void setup() {
-  // put your setup code here, to run once:
-    digitalWrite(lcdbacklight,HIGH);
-    lcd.begin(16, 2);
-  //  Serial.begin(9600);
-    lcd.setCursor(3,0);			//bullshit ... litreally
-    lcd.print("LOADING...");
-    lcd.setCursor(3, 1 );
-    lcd.print("MR.AWESOME");
-    delay(25000);
-    lcd.clear();
-    lcd.setCursor(0,0);
-    lcd.print("SENSORS FIRED UP");
-    lcd.setCursor(0,2);
-    lcd.print("AND RUNNING");
-    delay(2000);			//delay ensures sufficient time for booting up the sensors 
-  
-  btube.Setup();
-  bfan.Setup();
-  badds.Setup();
-  bsubs.Setup();
-}
-bool atdoor = false;
+bool atdoor = false;    //variables
 //bool inside = false;
 bool abouttoleave = false;
 //bool outside = false;
 
+
+//    INSIDE AND OUTSIDE FUNCTIONS THEY RETURN THE STATE OF APPLIANCE
+
+
+void door(){
+digitalWrite(relaytube ,btube.STATE() );    //tells what happens when someone is at the door ie sensor 1 triggerer only
+}
+
+void inside(){
+    digitalWrite(relaytube,btube.STATE());    //tells what happens when someone is inside ie both sensors are triggered with 1 one 1st
+    digitalWrite(relayfan,bfan.STATE());
+    pcount ++;                              //adds people in the room 
+  }
+  
+  void outside(){
+    pcount --;        //removes the person count in the room
+    if(pcount == 0 ){ //if room is empty turns of all appliances
+      digitalWrite(relaytube,LOW);
+      digitalWrite(relayfan,LOW);
+    }
+  }
+  
+  
+  //      THE MAIN SETUP 
+  
+  
+void setup() {
+  // put your setup code here, to run once:
+    digitalWrite(lcdbacklight,HIGH);
+    lcd.begin(16, 2);
+  pinMode(relaytube,OUTPUT);
+  pinMode(relayfan,OUTPUT);
+  
+  
+  //  Serial.begin(9600);
+    lcd.setCursor(3,0);			//bullshit ... litreally
+    lcd.print("LOADING...");//delay ensures sufficient time for booting up the sensors IE 30 sec
+    lcd.setCursor(3, 1 );
+    lcd.print(".....");
+    delay(25000);
+    ///lcd.on()
+    lcd.clear();
+    
+    lcd.setCursor(0,0);
+    lcd.print("SENSORS FIRED UP");
+    lcd.setCursor(0,2);
+    lcd.print("AND NOW RUNNING");
+    delay(5000);			
+  
+  btube.Setup();  //setup conditions for each object
+  bfan.Setup();
+  badds.Setup();
+  bsubs.Setup();
+}
+
+
+//THE MAIN LOOP
+
+
 void loop() {
-    // put your main code here, to run repeatedly:
+    //Loop conditions for each object
     badds.Loop();
     bsubs.Loop();
-
+    
     badds.addsp();
     bsubs.subsp();
     
-   // Serial.print("person count :-");Serial.println(pcount);
+    // Serial.print("person count :-");Serial.println(pcount);
     
     btube.Loop();
-    if(btube.BPRESSED() == 1){
-      if(btube.STATE() == 1){
+    
+    if(btube.BPRESSED() == 1){    //if onboard tube button is pressed
+      if(btube.STATE() == 1){     //if on state, then ACTIVE ie tube will be toggled if person count >0
         on();
         lcd.print("The tube's");
         lcd.setCursor(1,1);
@@ -248,21 +270,23 @@ void loop() {
         // off(3);
       }
     else{
-        on();
+        on();                     //  the tube is disabled ie tube will not toggle if p count >0
         lcd.print("The tube's");
         lcd.setCursor(1,1);
         lcd.print("INACTIVE");
         // off(3);
       }
     }
+    else{}  //redundant
+    
     bfan.Loop();
+    //similar to the tube
     if(bfan.BPRESSED() == 1){ 
       if(bfan.STATE() == 1){
         on();
         lcd.print("The fan's");
         lcd.setCursor(1,1);
         lcd.print("ACTIVE");
-        //off(3);
       }
       else{
         on();
@@ -276,8 +300,8 @@ void loop() {
     sensor1.Loop();
     sensor2.Loop();
     
-  if( ((sensor1.timer()) > 0) && (sensor2.timer() == 0)){
-    door();
+  if( ((sensor1.timer()) > 0) && (sensor2.timer() == 0)){ //only sensor 1 is triggered
+    door();     //door function
     atdoor = true;
     //Serial.println("motn at door or s1");
     on();
@@ -285,8 +309,8 @@ void loop() {
     lcd.setCursor(1,1);
     lcd.print("door");
   }
-  if( atdoor == true && (sensor2.timer() != 0) ){
-    inside();
+  if( atdoor == true && (sensor2.timer() != 0) ){ //both sensors triggered t1 for s1 > t2 for s2
+    inside();   
     on();
    // Serial.println(" inside");
     lcd.print("You've made it");
@@ -295,7 +319,7 @@ void loop() {
     atdoor = false ;
    // inside = true;
   }
-  if( (sensor2.timer()>0)  && (sensor1.timer() == 0)){
+  if( (sensor2.timer()>0)  && (sensor1.timer() == 0)){    //only sensor 2 is triggered
     abouttoleave = true ;
     on();
     lcd.print("Leaving...?");
