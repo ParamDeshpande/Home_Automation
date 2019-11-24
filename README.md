@@ -1,18 +1,19 @@
-# ArduinoNano
+# Home Automation
 
 automatically controls lights, fans, appliances
 
-components needed 
+## Installation and setup
+
+### components needed 
 pir sensor(s)
 relay(s)
-an arduinoboard  
-button(s) //for lazyboyproto
-16x2 LCD disp //for lazyboyproto
-
-leds // can be used in both the models (optional)
-
+an arduino board(s)  
+button(s) (for lazyboyproto)
+16x2 LCD disp (for lazyboyproto)
+leds (can be used in both the models (optional) )
 
 
+## Usage and guidelines
 1st)
 proto1
 does basic (only either of the 1 or more with same toggling) light / fan / appliance toggling for **single 𝐩𝐞𝐫𝐬𝐨𝐧** entry / exit basis
