@@ -1,0 +1,20 @@
+# Check configuration tokens
+# Ensure build layout
+# Check configuration tokens
+# Run 'dpkg --version'
+# Cwd None
+Debian 'dpkg' package management program version 1.19.0.5 (amd64).
+This is free software; see the GNU General Public License version 2 or
+later for copying conditions. There is NO warranty.
+# Search for Git (git)
+#  -> found at /usr/bin/git
+# Search for Cython (cython)
+#  -> found at /home/pallavi/venvs/venv-appdev/bin/cython
+# Search for Java compiler (javac)
+#  -> found at /usr/lib/jvm/java-8-openjdk-amd64/bin/javac
+# Search for Java keytool (keytool)
+#  -> found at /usr/lib/jvm/java-11-openjdk-amd64/bin/keytool
+# Run '/home/pallavi/.buildozer/android/platform/android-sdk/platform-tools/adb devices'
+# Cwd None
+List of devices attached
+
