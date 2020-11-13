@@ -1,0 +1,350 @@
+#include <LiquidCrystal.h>
+const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
+LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+
+unsigned long startTime = 0;
+
+int lcdbacklight = 6;
+int lcdstate = HIGH;
+/*
+    2   LCD DATA
+    3   "     "
+    4   "     "
+    5   "     "
+6 lcdbacklight
+7 Sensor 1
+8 RelayFan
+9 RelayTube
+10 Sensor2
+    11  "     "
+14 btube
+15 bfan
+16 lcd switch
+17 badds
+18 bsubs
+*/
+long pcount = 1;
+
+void off(int interval){	  //******enter time in sec and not msec ****** & to clear and set time of display
+    unsigned long currentMillis = millis();
+    if ((millis() - startTime )>= (interval*1000)){    
+      lcdstate = LOW ;
+      digitalWrite(lcdbacklight , lcdstate) ;
+      startTime = millis() ;
+    }
+  }
+
+void on(){		//to turn on the display
+    lcdstate = HIGH ;
+    lcd.display();
+    lcd.clear();
+    digitalWrite(lcdbacklight, lcdstate);
+    lcd.setCursor(0,0);
+  }
+
+
+class Button{
+  int inPin;         // the number of the input pin
+  int outPin;       // the number of the output pin
+  int state = HIGH;      // the current state of the output pin
+  int reading;           // the current reading from the input pin
+  int previous = LOW;    // the previous reading from the input pin
+
+  unsigned long time = 0;           // the last time the output pin was toggled
+  unsigned long debounce = 250UL;   // the debounce time, increase if the output flickers
+
+  public :                        //constructor
+  Button(int bpin , int ledpin){
+    inPin = bpin;
+    outPin = ledpin;
+  } 
+  
+    void Setup (){                //initialization
+      pinMode(inPin,  INPUT);
+      pinMode(outPin, OUTPUT);
+    }
+    
+    bool bpressed = 0 ;           //state of button 
+    
+      void Loop(){
+        reading = digitalRead(inPin);
+        //bool bpressed = 0 ;
+        if (reading == HIGH && previous == LOW && ((millis() - time) > debounce)){// if the input just went from LOW and HIGH and we've waited long enough
+          if (state == HIGH){                                                     // to ignore any noise on the circuit, toggle the output pin and remember the time
+              state = LOW;
+          }
+          else{
+              state = HIGH;
+            }
+        time = millis();
+        bpressed = 1;
+        }
+        else
+        bpressed = 0;
+      digitalWrite(outPin, state);
+      previous = reading;
+    }
+    int BPRESSED(){
+      return bpressed;
+    }
+    
+    int STATE(){
+      return state ;  
+    }
+    
+  };
+
+Button btube(14,0);   //initializing objects
+Button bfan(15,0);
+
+class Button2{        //Button Pins for adding /removing the no of people
+  int bPin ;
+  public:
+    Button2(int pinno){
+    bPin = pinno;  
+    }
+
+  void Setup(){
+    pinMode(bPin , INPUT);
+  }
+  
+  unsigned long time = 0;
+  unsigned long debounce = 250UL ;
+  int reading ;
+  int previous = HIGH;
+  
+  bool bpressed = 0;
+  void Loop(){
+    reading = digitalRead(bPin);
+    if(reading == HIGH && previous == LOW && (millis() - time >= debounce ) ){
+      bpressed = 1;
+      time = millis();
+      //Serial.println("the buttons pressed");
+    }
+    else
+      bpressed = 0;
+      
+    previous = reading;
+  }
+  
+  void addsp(){
+    if(bpressed == 1){
+      pcount++;
+      on();
+      lcd.print("person count = ");
+      lcd.setCursor(1,1);
+      lcd.print(pcount);
+    }
+  }
+  
+  void subsp(){
+    if(bpressed == 1){
+      pcount--;
+      on();
+      lcd.print("person count = ");
+      lcd.setCursor(1,1);
+      lcd.print(pcount);
+    }
+  }
+};
+
+Button2 badds(17);
+Button2 bsubs(18);
+
+// PIR MOTION DETECTOR CLASS 
+
+class Pir{
+  
+int pir;
+int reading ;
+public:               //constructor
+  Pir(long pinno){    
+    pir = pinno;
+  }
+  
+  void Setup(){         //Setup
+    pinMode(pir,INPUT);
+  }
+  unsigned long currentTime = 100;    //?
+  void Loop(){
+    reading = digitalRead(pir);
+    if(reading == HIGH){              //if reading is high then time is recorded
+      currentTime = millis();
+    }
+    else
+      currentTime = 0 ;  
+  }
+  
+  
+  long timer(){
+    return currentTime;           //returns the stored current time
+  }
+};
+Pir sensor1(7);
+Pir sensor2(10);
+
+const int relaytube = 9;
+const int relayfan = 8;
+bool atdoor = false;    //variables
+//bool inside = false;
+bool abouttoleave = false;
+//bool outside = false;
+
+
+//    INSIDE AND OUTSIDE FUNCTIONS THEY RETURN THE STATE OF APPLIANCE
+
+
+void door(){
+digitalWrite(relaytube ,btube.STATE() );    //tells what happens when someone is at the door ie sensor 1 triggerer only
+}
+
+void inside(){
+    digitalWrite(relaytube,btube.STATE());    //tells what happens when someone is inside ie both sensors are triggered with 1 one 1st
+    digitalWrite(relayfan,bfan.STATE());
+    pcount ++;                              //adds people in the room 
+  }
+  
+  void outside(){
+    pcount --;        //removes the person count in the room
+    if(pcount == 0 ){ //if room is empty turns of all appliances
+      digitalWrite(relaytube,LOW);
+      digitalWrite(relayfan,LOW);
+    }
+  }
+  
+  
+  //      THE MAIN SETUP 
+  
+  
+void setup() {
+  // put your setup code here, to run once:
+    digitalWrite(lcdbacklight,HIGH);
+    lcd.begin(16, 2);
+  pinMode(relaytube,OUTPUT);
+  pinMode(relayfan,OUTPUT);
+  
+  
+  //  Serial.begin(9600);
+    lcd.setCursor(3,0);			//bullshit ... litreally
+    lcd.print("LOADING...");//delay ensures sufficient time for booting up the sensors IE 30 sec
+    lcd.setCursor(3, 1 );
+    lcd.print(".....");
+    delay(25000);
+    ///lcd.on()
+    lcd.clear();
+    
+    lcd.setCursor(0,0);
+    lcd.print("SENSORS FIRED UP");
+    lcd.setCursor(0,2);
+    lcd.print("AND NOW RUNNING");
+    delay(5000);			
+  
+  btube.Setup();  //setup conditions for each object
+  bfan.Setup();
+  badds.Setup();
+  bsubs.Setup();
+}
+
+
+//THE MAIN LOOP
+
+
+void loop() {
+    //Loop conditions for each object
+    badds.Loop();
+    bsubs.Loop();
+    
+    badds.addsp();
+    bsubs.subsp();
+    
+    // Serial.print("person count :-");Serial.println(pcount);
+    
+    btube.Loop();
+    
+    if(btube.BPRESSED() == 1){    //if onboard tube button is pressed
+      if(btube.STATE() == 1){     //if on state, then ACTIVE ie tube will be toggled if person count >0
+        on();
+        lcd.print("The tube's");
+        lcd.setCursor(1,1);
+        lcd.print("ACTIVE");
+        // off(3);
+      }
+    else{
+        on();                     //  the tube is disabled ie tube will not toggle if p count >0
+        lcd.print("The tube's");
+        lcd.setCursor(1,1);
+        lcd.print("INACTIVE");
+        // off(3);
+      }
+    }
+    else{}  //redundant
+    
+    bfan.Loop();
+    //similar to the tube
+    if(bfan.BPRESSED() == 1){ 
+      if(bfan.STATE() == 1){
+        on();
+        lcd.print("The fan's");
+        lcd.setCursor(1,1);
+        lcd.print("ACTIVE");
+      }
+      else{
+        on();
+        lcd.print("The fan's");
+        lcd.setCursor(1,1);
+        lcd.print("INACTIVE");
+       // off(3);
+      }
+    }
+    
+    sensor1.Loop();
+    sensor2.Loop();
+    
+  if( ((sensor1.timer()) > 0) && (sensor2.timer() == 0)){ //only sensor 1 is triggered
+    door();     //door function
+    atdoor = true;
+    //Serial.println("motn at door or s1");
+    on();
+    lcd.print("Someones at the");
+    lcd.setCursor(1,1);
+    lcd.print("door");
+  }
+  if( atdoor == true && (sensor2.timer() != 0) ){ //both sensors triggered t1 for s1 > t2 for s2
+    inside();   
+    on();
+   // Serial.println(" inside");
+    lcd.print("You've made it");
+    lcd.setCursor(1,1);
+    lcd.print("inside");
+    atdoor = false ;
+   // inside = true;
+  }
+  if( (sensor2.timer()>0)  && (sensor1.timer() == 0)){    //only sensor 2 is triggered
+    abouttoleave = true ;
+    on();
+    lcd.print("Leaving...?");
+  }
+
+  
+  if(abouttoleave == true && (sensor1.timer() != 0)){  
+    abouttoleave = false ; 
+    outside();
+    on();
+    lcd.print("GOODBYE");
+  //  Serial.println("outside");
+    lcd.setCursor(1,1);
+    lcd.print(pcount);
+  }  
+  /*
+  Serial.print("s1-");
+  Serial.println(sensor1.timer());
+  Serial.print("s2-");
+  Serial.println(sensor2.timer());*/
+  
+  
+    
+  //lcd.setCursor(0,10);
+  //lcd.print(pcount);
+off(5);
+delay(50);
+}
