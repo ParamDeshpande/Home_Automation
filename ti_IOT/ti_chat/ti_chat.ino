@@ -29,9 +29,9 @@
 /* Global VARS */
 
 // your network name also called SSID
-char ssid[] = "TPLINK_47AC";
+char ssid[] = "yourwifiid";
 // your network password
-char password[] = "imnotgonnaputmyhomewifipasswordhere";
+char password[] = "supersecret";
 
 WiFiServer server(23);
 
@@ -62,6 +62,7 @@ static const char LEDOFF_MSG[] = {"ledOFF"};
 
 char CLIENT_MSG[1000] = {0};
 uint8_t iterMsg = 0;
+uint64_t timeoutTime = 0;
 const char TERM_CHAR = 'q'; 
 
 /* Function Prototypes */
@@ -86,7 +87,7 @@ void setup() {
   
   Serial.println("\nYou're connected to the network");
   Serial.println("Waiting for an ip address");
-  IPAddress retIP(192,168,0,150);
+  IPAddress retIP(192,168,1,150);
   WiFi.config(retIP);
   while (WiFi.localIP() == INADDR_NONE) {
     // print dots while we wait for an ip addresss
@@ -109,22 +110,16 @@ void setup() {
 void loop() {
   // wait for a new client:
   WiFiClient client = server.available();
-
+ 
 
   // when the client sends the first byte, say hello:
   if (client) {
-    if (!alreadyConnected) {
-      // clead out the input buffer:
-      client.flush();
-      //Serial.println("We have a new client");
-      //client.println("Hello, client!");
-      alreadyConnected = true;
-    }
-
+    
     if (client.available() > 0) {
-      
-      while(1){
+      timeoutTime = 0;
+      while(timeoutTime < 2000){
         // read the bytes incoming from the client:
+        timeoutTime = millis();
         char thisChar = client.read();
         // echo the bytes back to the client:
         //server.write(thisChar);
@@ -132,8 +127,7 @@ void loop() {
         //Serial.write(thisChar);
         digitalWrite(YLED,HIGH);
         if(thisChar != TERM_CHAR){
-          CLIENT_MSG[iterMsg] = thisChar;
-          iterMsg+=1;
+          CLIENT_MSG[iterMsg++] = thisChar;
           #ifdef DEBUG
           Serial.print(" client msg is :" );
           Serial.print(CLIENT_MSG );
@@ -143,9 +137,6 @@ void loop() {
         }
         else{
           exec_cmd();
-          digitalWrite(YLED,LOW);
-          memset(CLIENT_MSG, 0, sizeof(CLIENT_MSG));
-          iterMsg =0;
           break;
           #ifdef DEBUG
           Serial.print(" client msg is :" );
@@ -158,7 +149,10 @@ void loop() {
       }
       
     }
-    
+    digitalWrite(YLED,LOW);
+    memset(CLIENT_MSG, 0, sizeof(CLIENT_MSG));
+    iterMsg =0;
+          
   }
   
   sleep(1000);
