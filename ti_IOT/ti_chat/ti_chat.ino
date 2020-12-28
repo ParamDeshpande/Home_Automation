@@ -26,12 +26,14 @@
 #endif
 #include <WiFi.h>
 
+//#define DEBUG
+
 /* Global VARS */
 
 // your network name also called SSID
-char ssid[] = "TPLINK_47AC";
+char ssid[] = "something";
 // your network password
-char password[] = "ClaraDee1)))$";
+char password[] = "x";
 
 WiFiServer server(23);
 
@@ -59,14 +61,17 @@ static const char LEDON_MSG[] =  {"ledON" };
 static const char LEDOFF_MSG[] = {"ledOFF"};
 
 
-
-char CLIENT_MSG[1000] = {0};
+char CLIENT_MSG[100] = {0};
+bool redundantMsg = true;
 uint8_t iterMsg = 0;
+uint64_t currentTime = 0;
+uint64_t timeoutTime = 0;
 const char TERM_CHAR = 'q'; 
 
 /* Function Prototypes */
 void setupDevices(void);
 void exec_cmd(void);
+void showErrorSignal(void);
 
 void setup() {
   setupDevices();
@@ -86,7 +91,7 @@ void setup() {
   
   Serial.println("\nYou're connected to the network");
   Serial.println("Waiting for an ip address");
-  IPAddress retIP(192,168,0,150);
+  IPAddress retIP(192,168,1,150);
   WiFi.config(retIP);
   while (WiFi.localIP() == INADDR_NONE) {
     // print dots while we wait for an ip addresss
@@ -105,35 +110,69 @@ void setup() {
   server.begin();
 }
 
-
-void loop() {
+#ifdef DEBUG
+#endif
+#define NEW_LOOP 
+#ifdef NEW_LOOP
+void loop(){
   // wait for a new client:
   WiFiClient client = server.available();
 
+  if(client){
+    if (client.available() > 0) {
+      currentTime = millis();
+      timeoutTime = currentTime;
+      while( (timeoutTime - currentTime < 5000) ){
+        timeoutTime = millis();
+        char thisChar = client.read();
+        digitalWrite(YLED,HIGH);
+        if(thisChar != TERM_CHAR){
+          CLIENT_MSG[iterMsg++] = thisChar;
+          #ifdef DEBUG
+          Serial.print("The client msg is ");
+          Serial.println(CLIENT_MSG);
+          #endif
+        }
+        else{
+          exec_cmd();
+          break;
+        }
+      }
+      if(redundantMsg){
+        showErrorSignal();
+      }
+    }
+    digitalWrite(YLED,LOW);
+    /*NOTE : Largest msg is of 9 bytes if adding new msgs, change size accordingly*/
+    memset(CLIENT_MSG, 0, 9);
+    iterMsg=0;
+  }
+  
+  #ifdef DEBUG
+  Serial.println("I am sleeping ");
+  #endif
+  sleep(1000);
+}
+#endif
+//#define OLD_LOOP 
+#ifdef OLD_LOOP
+void loop() {
+  // wait for a new client:
+  WiFiClient client = server.available();
+ 
 
   // when the client sends the first byte, say hello:
   if (client) {
-    if (!alreadyConnected) {
-      // clead out the input buffer:
-      client.flush();
-      //Serial.println("We have a new client");
-      //client.println("Hello, client!");
-      alreadyConnected = true;
-    }
-
+    
     if (client.available() > 0) {
-      
-      while(1){
+      timeoutTime = 0;
+      while(timeoutTime < 5000){
         // read the bytes incoming from the client:
+        timeoutTime = millis();
         char thisChar = client.read();
-        // echo the bytes back to the client:
-        //server.write(thisChar);
-        // echo the bytes to the server as well:
-        //Serial.write(thisChar);
         digitalWrite(YLED,HIGH);
         if(thisChar != TERM_CHAR){
-          CLIENT_MSG[iterMsg] = thisChar;
-          iterMsg+=1;
+          CLIENT_MSG[iterMsg++] = thisChar;
           #ifdef DEBUG
           Serial.print(" client msg is :" );
           Serial.print(CLIENT_MSG );
@@ -143,44 +182,65 @@ void loop() {
         }
         else{
           exec_cmd();
-          digitalWrite(YLED,LOW);
-          memset(CLIENT_MSG, 0, sizeof(CLIENT_MSG));
-          iterMsg =0;
-          break;
           #ifdef DEBUG
-          Serial.print(" client msg is :" );
-          Serial.print(CLIENT_MSG );
-          Serial.print(" iterMsg:" );
-          Serial.println(iterMsg);
+          Serial.println(" exec cmd done" );
           #endif
+          break;
+          
         }
           
       }
       
     }
-    
+    digitalWrite(YLED,LOW);
+    memset(CLIENT_MSG, 0, sizeof(CLIENT_MSG));
+    iterMsg=0;
   }
-  
+  #ifdef DEBUG
+  Serial.println("I am sleeping ");
+  #endif
   sleep(1000);
 
 }
 
+#endif
 
 void exec_cmd(void){
-  if(COMP_MSG(CLIENT_MSG,LIGHTON_MSG))
-    digitalWrite(LIGHT_PIN,DEVICE_ON);
-  else if(COMP_MSG(CLIENT_MSG,LIGHTOFF_MSG))
-    digitalWrite(LIGHT_PIN,DEVICE_OFF);
-  
-  else if(COMP_MSG(CLIENT_MSG,FANON_MSG))
-    digitalWrite(FAN_PIN,!DEVICE_ON);
-  else if(COMP_MSG(CLIENT_MSG,FANOFF_MSG))
-    digitalWrite(FAN_PIN,!DEVICE_OFF);
 
-  else if(COMP_MSG(CLIENT_MSG,LEDON_MSG))
+redundantMsg = true;
+
+  if(COMP_MSG(CLIENT_MSG,LIGHTON_MSG)){
+    digitalWrite(LIGHT_PIN,DEVICE_ON);
+    redundantMsg = false;
+    #ifdef DEBUG
+    Serial.println("LED turned ON");
+    #endif
+  }
+    
+  else if(COMP_MSG(CLIENT_MSG,LIGHTOFF_MSG)){
+    digitalWrite(LIGHT_PIN,DEVICE_OFF);
+    redundantMsg = false;
+  }
+  
+  else if(COMP_MSG(CLIENT_MSG,FANON_MSG)){
+    digitalWrite(FAN_PIN,!DEVICE_ON);
+    redundantMsg = false;
+  }
+
+  else if(COMP_MSG(CLIENT_MSG,FANOFF_MSG)){
+    digitalWrite(FAN_PIN,!DEVICE_OFF);
+    redundantMsg = false;
+  }
+
+  else if(COMP_MSG(CLIENT_MSG,LEDON_MSG)){
     digitalWrite(LED_PIN,DEVICE_ON);
-  else if(COMP_MSG(CLIENT_MSG,LEDOFF_MSG))
+    redundantMsg = false;
+  }
+
+  else if(COMP_MSG(CLIENT_MSG,LEDOFF_MSG)){
     digitalWrite(LED_PIN,DEVICE_OFF);
+    redundantMsg = false;
+  }
 }
 
 void printWifiStatus() {
@@ -201,6 +261,23 @@ void printWifiStatus() {
 }
 
 
+void showErrorSignal(void){
+    digitalWrite(RLED,HIGH);
+    delay(500);
+    digitalWrite(RLED,LOW);
+    delay(500);
+  
+    digitalWrite(RLED,HIGH);
+    delay(500);
+    digitalWrite(RLED,LOW);
+    delay(500);
+  
+    digitalWrite(RLED,HIGH);
+    delay(500);
+    digitalWrite(RLED,LOW);
+    delay(500);
+  
+}
 
 void setupDevices(void){  
   pinMode(GLED, OUTPUT);
