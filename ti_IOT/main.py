@@ -14,7 +14,7 @@ purple = [0,0.5,1,1]
 yellow = [1,1,0,1]
 orange = [1,0.5,0,1]
 
-HOST = '192.168.0.150'  # The server's hostname or IP address
+HOST = '192.168.1.150'  # The server's hostname or IP address
 PORT = 23        # The port used by the server
 
 
@@ -53,7 +53,7 @@ class MainApp(App):
     
     def __init__(self):
         super().__init__()
-        Clock.schedule_once(self.connect, 1)
+        Clock.schedule_once(self.connect, 0)
 
 
     def connect(self, _ ):
